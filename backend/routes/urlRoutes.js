@@ -48,7 +48,7 @@ router.get("/:shortId", async (req,res) => {
     const { shortId }  = req.params;
     
     const url = await Url.findOne({ shortId });
-    if (!url) return res.status(400).json({ error: "URL not found"});
+    if (!url) return res.status(404).json({ error: "URL not found"});
 
     url.clicks += 1;
     await url.save();
