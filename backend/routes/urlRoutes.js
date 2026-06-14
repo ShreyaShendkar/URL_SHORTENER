@@ -1,64 +1,32 @@
-import express from 'express';
-import Url from '../models/Url.js';
-import { nanoid } from 'nanoid';
- 
+import express from "express";
+import {
+  createUrl,
+  getUserLinks,
+  deleteUrl,
+  updateUrl,
+  toggleUrlActive,
+  getUrlAnalytics,
+} from "../controllers/urlController.js";
+import { verifyAuth } from "../middleware/verifyAuth.js";
+import rateLimit from "express-rate-limit";
+
 const router = express.Router();
 
+// Rate limiter for creating short URLs (10 requests per 15 minutes per IP)
+const createUrlLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  message: "Too many requests, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-router.post('/shorten', async (req,res) => {
-  try {
-     const { originalUrl }= req.body;
-
-    if(!originalUrl) {
-      return res.status(400).json({ error : "Url is required"});
-    }
-
-    try {
-      new URL(originalUrl);
-    } catch {
-      return res.status(400).json({ error: "Invalid URL"});
-    }
-
-    let shortId;
-    let exists = true;
-
-    while(exists) {
-      shortId = nanoid(7);
-      exists = await Url.findOne({ shortId });
-    }
-
-    const url = await Url.create({
-      shortId, originalUrl
-    });
-
-    res.json({
-      shortId: url.shortId,
-      shortUrl: `${process.env.BASE_URL}/${url.shortId}`,
-    })
-
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Server error"});
-  }
- 
-})
-
-router.get("/:shortId", async (req,res) => {
-  try {
-    const { shortId }  = req.params;
-    
-    const url = await Url.findOne({ shortId });
-    if (!url) return res.status(404).json({ error: "URL not found"});
-
-    url.clicks += 1;
-    await url.save();
-
-    return res.redirect(url.originalUrl);
-
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Server error"});
-  }
-})
+// Protected routes (require authentication)
+router.post("/shorten", verifyAuth, createUrlLimiter, createUrl);
+router.get("/user-links", verifyAuth, getUserLinks);
+router.delete("/:id", verifyAuth, deleteUrl);
+router.put("/:id", verifyAuth, updateUrl);
+router.patch("/:id/toggle", verifyAuth, toggleUrlActive);
+router.get("/:id/analytics", verifyAuth, getUrlAnalytics);
 
 export default router;

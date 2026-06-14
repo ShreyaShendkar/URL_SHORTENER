@@ -1,90 +1,41 @@
-import { useState } from "react";
-import axios from "axios";
-import { QRCode } from "react-qr-code";
-import QRCodeGenerator from "qrcode";
+import { Routes, Route } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AppLayout from "./components/layout/AppLayout";
 
+import Landing from "./pages/Landing";
+import Register from "./pages/Register";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Links from "./pages/Links";
+import Analytics from "./pages/Analytics";
+import Profile from "./pages/Profile";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
-
-function App () {
-  const [url, setUrl] = useState("");
-  const [shortUrl, setShortUrl] = useState("");
-  const [copied, setCopied] = useState(true);
-  const [qrImage, setQrImage] = useState("");
-
-  const handleShorten = async() => {
-    if(!url) return;
-
-    try {
-      const res = await axios.post(`${API_BASE_URL}/shorten`, {
-         originalUrl : url
-      });
-
-      const newShortUrl = res.data.shortUrl;
-      setShortUrl(newShortUrl);
-      setCopied(false);
-
-      const qr = await QRCodeGenerator.toDataURL(newShortUrl);
-      setQrImage(qr);
-    } catch (error){
-      console.log(error);
-      alert("Something went wrong")
-    }
-  }
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shortUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-   return <div className="min-h-screen flex flex-col items-center justify-center p-6 gap-6">
-     <h1 className="text-4xl font-bold mb-4 text-center"> URL SHORTENER</h1>
-     <div className="flex flex-col gap-3 w-full max-w-3xl">
-      <input type="text" className="input input-success w-full" 
-      placeholder="Enter long URL" value={url}
-      onChange={(e) => setUrl(e.target.value)}
-      />
-      <button
-        onClick={handleShorten}
-        className="btn btn-primary w-full sm:auto">
-          Shorten
-        </button>
-     </div>
-     {shortUrl && (
-      <div className="flex flex-col items-center max-w-3xl w-full">
-        <p className="font-medium mb-2">Your short link:</p>
-        <a className="link link-primary braek-all" href={shortUrl} >
-          {shortUrl}
-        </a>
-        <button 
-          onClick={handleCopy}
-          className={`btn mt-2 w-full ${
-            copied ? "btn-success" : "btn-secondary"
-          }` }
-          >
-            {copied ? "copied!" : "Copy"}
-          </button>
-        <div className="bg-white p-4 rounded-lg shadow mt-6">
-          <p className="mb-2 text-center font-semibold text-gray-800">
-            Scan QR Code:
-          </p>
-          <QRCode value={shortUrl} size={180} />
-        </div>
-        {qrImage && (
-          <a
-           className="btn btn-accent mt-3 w-full"
-           download="qr-code.png"
-           href={qrImage}
-           >
-            Download QR Code
-           </a>
-           
-        )}
-          
-      </div>
-     )}
-    </div>
+function Protected({ children }) {
+  return (
+    <ProtectedRoute>
+      <AppLayout>{children}</AppLayout>
+    </ProtectedRoute>
+  );
 }
 
-export default App;
+export default function App() {
+  return (
+    <AuthProvider>
+      <Toaster position="top-right" />
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+
+        <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+        <Route path="/links" element={<Protected><Links /></Protected>} />
+        <Route path="/links/:id" element={<Protected><Analytics /></Protected>} />
+        <Route path="/profile" element={<Protected><Profile /></Protected>} />
+
+        <Route path="*" element={<Landing />} />
+      </Routes>
+    </AuthProvider>
+  );
+}
