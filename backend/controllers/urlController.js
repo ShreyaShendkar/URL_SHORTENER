@@ -135,7 +135,8 @@ export const getUserLinks = async (req, res) => {
         customAlias: link.customAlias,
         analytics: link.analytics?.recentVisits || [],
         expiresAt: link.expiresAt,
-        isActive: link.isActive && (!link.expiresAt || link.expiresAt > new Date()),
+        isActive: link.isActive,
+        isExpired: Boolean(link.expiresAt && link.expiresAt <= new Date()),
         createdAt: link.createdAt,
         lastVisited: link.lastVisited,
       })),
@@ -321,6 +322,13 @@ export const redirectUrl = async (req, res) => {
   try {
     const { shortId } = req.params;
     const now = new Date();
+
+    res.set({
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+      "Surrogate-Control": "no-store",
+    });
 
     // Find URL by shortId or customAlias
     const url = await Url.findOne({

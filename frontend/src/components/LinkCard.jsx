@@ -12,7 +12,8 @@ export default function LinkCard({ link, onDelete, onToggle }) {
     toast.success("Copied to clipboard");
   };
 
-  const isExpired = link.expiresAt && new Date(link.expiresAt) <= new Date();
+  const isExpired =
+    link.isExpired ?? (link.expiresAt && new Date(link.expiresAt) <= new Date());
 
   return (
     <>

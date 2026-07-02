@@ -34,7 +34,11 @@ export default function Links() {
   const handleToggle = async (id) => {
     try {
       const res = await api.patch(`/urls/${id}/toggle`);
-      setLinks(links.map((l) => (l._id === id ? { ...l, isActive: res.data.data.isActive } : l)));
+      setLinks((currentLinks) =>
+        currentLinks.map((link) =>
+          link._id === id ? { ...link, isActive: res.data.data.isActive } : link
+        )
+      );
       toast.success(res.data.message);
     } catch (err) {
       toast.error(err.response?.data?.message || "Could not update link");
