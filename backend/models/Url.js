@@ -24,6 +24,14 @@ const urlSchema = new mongoose.Schema(
       default: () => nanoid(8),
       unique: true,
     },
+    // "slug" is the single active lookup field.
+    // It holds the customAlias if set, otherwise the shortId.
+    slug: {
+      type: String,
+      unique: true,
+      sparse: true,
+      lowercase: true,
+    },
     customAlias: {
       type: String,
       unique: true,
@@ -86,10 +94,18 @@ const urlSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Every redirect now does: Url.findOne({ slug }) — one index, one scan.
+urlSchema.index({ slug: 1 });
 // Compound index for userId and customAlias
 urlSchema.index({ userId: 1, customAlias: 1 });
 // Index for userId to quickly fetch all user links
 urlSchema.index({ userId: 1, createdAt: -1 });
+
+// This keeps slug always up to date when alias is added/removed.
+urlSchema.pre("save", function (next) {
+  this.slug = this.customAlias || this.shortId;
+  next();
+});
 
 const Url = mongoose.model("Url", urlSchema);
 
